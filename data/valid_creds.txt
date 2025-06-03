@@ -1,0 +1,6 @@
+ali_khan:password
+abdullah@gmail.com:letmein
+zainab@gmail.com:qwerty
+hassan@gmail.com:admin
+malikabdullahnasir5@gmail.com:12345678
+123@gmail.com:ewefefewfewff12

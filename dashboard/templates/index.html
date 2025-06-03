@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CrackDefend Lab Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Icons & Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="modern-bg">
+<div class="container-fluid py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+    <h1 class="display-5 fw-bold mb-3" style="letter-spacing: 1.5px;"><i class="bi bi-shield-lock"></i> CrackDefend Lab Dashboard</h1>
+    <div>
+      <button class="btn btn-success me-2" onclick="startModule('attacker')"><i class="bi bi-play-circle"></i> Start Attacker</button>
+      <button class="btn btn-danger me-2" onclick="stopModule('attacker')"><i class="bi bi-stop-circle"></i> Stop Attacker</button>
+      <button class="btn btn-success me-2" onclick="startModule('defender')"><i class="bi bi-play-circle"></i> Start Defender</button>
+      <button class="btn btn-danger me-2" onclick="stopModule('defender')"><i class="bi bi-stop-circle"></i> Stop Defender</button>
+      <button class="btn btn-dark ms-2" onclick="toggleDarkMode()"><i class="bi bi-moon-stars"></i></button>
+      <button class="btn btn-outline-danger ms-2" onclick="resetStats()"><i class="bi bi-arrow-clockwise"></i> Reset All Statistics</button>
+    </div>
+  </div>
+  <div class="row g-3 mb-3">
+    <div class="col-md-2 col-6">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6 class="text-muted">Attacks</h6>
+          <h2 id="stat-attacks" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6 class="text-success">Success</h6>
+          <h2 id="stat-success" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6 class="text-danger">Blocked</h6>
+          <h2 id="stat-blocked" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6 class="text-primary">Emails Sent</h6>
+          <h2 id="stat-emails" class="fw-bold">0</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6>Most Targeted</h6>
+          <div id="stat-most-email" class="fw-medium"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6>Most Used Pwd</h6>
+          <div id="stat-most-pwd" class="fw-medium"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card glass-card text-center shadow-sm">
+        <div class="card-body">
+          <h6>Most Aggressive IP</h6>
+          <div id="stat-most-ip" class="fw-bold"></div>
+          <div id="stat-most-ip-geo" class="small text-muted"></div>
+        </div>
+      </div>
+      <div class="card glass-card mt-3 text-center shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-2">Attempts (Last Hour)</h6>
+          <div id="stat-last-hour" class="fs-5 fw-bold"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-9">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card glass-card shadow-sm">
+            <div class="card-header bg-gradient fw-bold text-primary"><i class="bi bi-graph-up"></i> Attempts Over Time</div>
+            <div class="card-body" style="height:260px">
+              <canvas id="hourChart" height="80"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card glass-card shadow-sm">
+            <div class="card-header bg-gradient fw-bold text-info"><i class="bi bi-pie-chart"></i> IP Distribution</div>
+            <div class="card-body" style="height:260px">
+              <canvas id="ipPie" height="120"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card glass-card shadow-sm mt-3">
+        <div class="card-header bg-gradient fw-bold text-success"><i class="bi bi-bar-chart-fill"></i> Attack Trends</div>
+        <div class="card-body" style="height:180px">
+          <canvas id="attackChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card glass-card mb-4 shadow-sm">
+    <div class="card-header bg-gradient text-dark fw-bold"><i class="bi bi-toggle2-on"></i> Live Control Panel</div>
+    <div class="card-body">
+      <div class="row align-items-center g-2">
+        <div class="col-md-auto">
+          <label class="form-label me-2 mb-0">Attack Speed (sec):</label>
+          <input type="number" id="attackSpeed" min="0.1" step="0.1" value="1" class="form-control d-inline-block w-auto">
+          <button class="btn btn-primary btn-sm ms-2" onclick="setAttackSpeed()">Update Speed</button>
+        </div>
+        <div class="col-md-auto">
+          <form id="uploadListForm" class="d-inline" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <select name="type" class="form-select d-inline w-auto ms-2">
+              <option value="email">Email</option>
+              <option value="password">Password</option>
+            </select>
+            <button class="btn btn-secondary btn-sm ms-2" type="submit">Upload List</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card glass-card mb-3 shadow-sm">
+        <div class="card-header bg-gradient text-info fw-bold"><i class="bi bi-list-ol"></i> Recent Attacks</div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>Time</th><th>User</th><th>IP</th><th>Password</th><th>Status</th></tr></thead>
+            <tbody id="attack-table"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card glass-card mb-3 shadow-sm">
+        <div class="card-header bg-gradient text-info fw-bold"><i class="bi bi-people"></i> User List</div>
+        <div class="card-body">
+          <ul id="users-list" class="list-group mb-3"></ul>
+          <form id="addUserForm" class="row g-2 align-items-center">
+            <div class="col-sm-5">
+              <input name="username" class="form-control" placeholder="Username or Email" required>
+            </div>
+            <div class="col-sm-5">
+              <input name="password" class="form-control" placeholder="Password" required id="newPwd">
+              <small id="pwdStrength" style="font-weight:bold;"></small>
+            </div>
+            <div class="col-sm-2">
+              <button class="btn btn-primary w-100" type="submit">Add User</button>
+            </div>
+          </form>
+          <form id="addPasswordForm" class="mt-3 row g-2 align-items-center">
+            <div class="col-md-8">
+              <input name="password" class="form-control" placeholder="Password" required>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-secondary w-100" type="submit">Add Password</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card glass-card mb-3 shadow-sm">
+        <div class="card-header bg-gradient text-warning fw-bold"><i class="bi bi-envelope-open"></i> Recent Emails (MailHog)</div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-warning"><tr><th>Time</th><th>To</th><th>Subject</th></tr></thead>
+            <tbody id="email-table"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card glass-card mb-3 shadow-sm">
+        <div class="card-header bg-gradient text-secondary fw-bold"><i class="bi bi-key"></i> Password List</div>
+        <div class="card-body">
+          <ul id="passwords-list" class="list-group"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3 mt-2">
+    <div class="col-md-6">
+      <div class="card glass-card border-danger shadow-sm">
+        <div class="card-header bg-danger text-white"><i class="bi bi-person-x"></i> Blocked Users/IPs</div>
+        <div class="card-body">
+          <ul id="blocked-list" class="list-group"></ul>
+          <button class="btn btn-outline-secondary mt-2" onclick="refreshBlocked()">Refresh</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card glass-card border-success shadow-sm">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-person-check"></i> Whitelisted Users/IPs</span>
+          <button class="btn btn-sm btn-outline-light" onclick="addWhitelistIP()"><i class="bi bi-plus-circle"></i> Add</button>
+        </div>
+        <div class="card-body">
+          <ul id="whitelist-list" class="list-group"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
